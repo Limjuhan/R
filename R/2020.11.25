@@ -1,0 +1,272 @@
+##11/25 복습
+  
+if (TRUE) {
+  print('TRUE')
+  print('Hello')
+}  else {
+  print('FALSE')
+  print('World')
+}
+  
+team_A <- 2 # Number of goals scored by Team A
+team_B <- 2# Number of goals scored by Team B  
+
+if(team_A > team_B) {
+  print('A팀승')
+}  else if (team_A<team_B) {
+  print('B팀승')
+} else {
+  print('무승부')
+  }
+
+## 하나의 논리값에 대한 판단
+
+x1 <- c(4)
+if (x1 %% 2 == 0) {
+  y1 = c('Even Number')
+  print(y1)
+} else {
+  y1 = c('Odd Number')
+  print(y1)
+}
+
+## 두개 이상의 논리값에 대한 판단
+# 엑셀 if와 똑같음
+
+#ifelse(조건,참,거짓)
+
+x <- c(1,2,3,4,5)
+ifelse(x %% 2 == 0, 'even','odd')
+
+x <- c(1,2,3,4)
+y <- c(2,1,4,5)
+
+ifelse(x<y,x,y)  
+ifelse(sum(x-y) > 0, 'positive',ifelse(sum(x-y)<0,'negative','zero'))  
+
+#연습문제
+a<-seq(1,30,4)  
+if (mean(a)>=15) {
+  '평균이상'
+} else {
+  '평균미만'
+}
+########################
+temp=0
+if(temp<=0) {
+  'freezing'
+} else if(temp<=10) {
+  'cold'
+} else if(temp<=20) {
+  'cool'
+} else if (temp<=30) {
+  'warm'
+} else {
+  'hot'
+}
+
+temp=c(5,20,-6,37,24,13)
+
+ifelse(temp<=0,'freezing',ifelse(
+       temp<=10,'cold',ifelse(
+       temp<=20,'cool',ifelse(
+       temp<=30,'warm','hot'
+))))
+
+rm(list=ls())
+
+
+########################
+data(iris)
+
+iris$new=ifelse(iris$Sepal.Length>6,'1','0')
+sum(subset(iris,new =='1','Sepal.Width'))
+
+#expand.grid
+#n개의 벡터에 있는 요소의 모든 조합을 작성
+
+die<-1:6
+rolls<-expand.grid(die,die)
+rolls
+
+#모든 주사위의 합은?
+rolls$value <- rolls$Var1 + rolls$Var2
+head(rolls)
+rolls$value
+
+#
+prob <- c("1" = 1/8, "2" = 1/8, "3" = 1/8, "4" = 1/8, "5" = 1/8, "6" = 3/8)
+prob
+
+rolls$prob1<- prob[rolls$Var1]
+rolls$prob2 <- prob[rolls$Var2]
+rolls$prob <- rolls$prob1 * rolls$prob2
+head(rolls)
+
+#주사위의 예상 기대값은?
+sum(rolls$value * rolls$prob)
+
+##########################################
+rm(list=ls())
+wheel <- c("DD", "7", "BBB", "BB", "B", "C", "0")
+prob <- c("DD" = 0.03, "7" = 0.03, "BBB" = 0.06, 
+          "BB" = 0.1, "B" = 0.25, "C" = 0.01, "0" = 0.52)
+
+rolls<-expand.grid(wheel,wheel,wheel)
+rolls$prob1<-prob[rolls$Var1]
+rolls$prob2<-prob[rolls$Var2]
+rolls$prob3<-prob[rolls$Var3]
+rolls$prob<-rolls$prob1 * rolls$prob2 * rolls$prob3
+head(rolls)
+
+nrow(subset(rolls,prob>0.001))
+
+###############################################
+for (value in c('my','first','for','loop')) {
+  print('one run')
+}
+
+
+for (value in c("My", "second", "for", "loop")) {
+  print(value)
+}
+value
+
+chars <- rep(0,4)
+
+words <- c('my','fourth','for','loop')
+
+for (i in 1:4) {
+  chars[i] <- words[i]
+}
+chars
+
+#for문을 통한 계산
+rolls$new <-NA
+
+for (i in 1:nrow(rolls)) {
+  symbols <- sum(rolls[i,1], rolls[i,2], rolls[i,3])
+  rolls$new[i] <- symbols
+}
+symbols
+rolls$new
+-----------------------------------
+#1번
+sum <- 0
+for (i in 1:100) {
+  sum <- sum + i
+}
+sum
+#2번
+sum2 <- 0
+sample(1:6,1)
+for (i in 1:20) {
+  sum2 <- sum2 + sample(1:6,1)
+}
+sum2
+######################################
+i <-1
+while(i<6) {
+  print(i)
+  i =i+1
+}
+# 1~10까지 누적합 구하기 (cummlative sum by while) : while(condition) { expression }
+z <- 0
+i <- 1
+while (i<=10) { 
+  z = z + i
+  cat("cummulative summation",z, "\n")
+  i = i + 1
+}
+
+k <- 1
+repeat {
+  k <- k+3
+  if (k>5) break}
+#####################################
+#1
+for (i in 2:9) {
+  print(seq(i,by=i,length.out=9))
+  
+}
+#1-2
+i<-2
+while (i<10) {
+  print(seq(i,by=i,length.out=9))
+  i=i+1
+}
+####################
+myfunction <- function() {
+  print('hi hello')
+}
+myfunction()
+
+make_sum <- function(x,y) {
+  x+y
+}
+make_sum(3,4)
+
+pp <- function(x,y=6) {
+              x^y
+}
+pp(2)
+pp(4,2)
+
+make_sum <- function(x,y) {
+  return(x+y)
+}
+make_sum(3,4)
+
+dt <- function(x,y) {
+  add <- x+y
+  mul <- x*y
+  c(add=add, mul=mul)
+}
+
+dt(3,5)
+
+
+my_function <- function(x,...) {
+  print(x)
+  summary(...)
+}
+z <- 1:20
+zz <- my_function('hi',z)
+
+#######################################
+#1
+grade <- function(x) {
+  ifelse (x<=40,'C',ifelse(x<=70,'B','A'))
+}
+
+grade(71)
+
+
+
+# 배열 또는 행렬에 주어진 함수를 적용한 뒤 그 결과를 벡터, 배열 또는 리스트로 반환
+# 배열 또는 행렬에 적용
+
+apply(
+  X, #배열 또는 헹렬
+  MARGIN,
+  FUN 
+)
+
+#문제 1
+data(iris)
+# iris에서 각 행마다(1~4열)의 분산 열을 추가하시오 (var)
+iris$Var<-apply(iris[,1:4],1, var)
+head(iris)
+#문제 2
+# function을 활용해서 iris[,1:4]의 모든 값들은 제곱하시오
+sapply(iris[,1:4], function(x) {x^2})
+#문제 3
+# iris에서 for문을 활용해서 숫자형(iris[,1:4]) 값을 Species별 평균을 구하시오
+# z변수에 저장
+rm(list=ls())
+head(iris)
+subset(iris,Species = 'setosa',)
+for (i in 1:nrow(iris[,1:4]) {
+  apply(iris[,1:4],2,mean)
+})
+head(iris,120)
