@@ -1,0 +1,224 @@
+
+library(dplyr)
+
+delivery = read.csv('SKT.csv', fileEncoding='UTF-8' )
+head(delivery)
+
+#1.1slice()로 특정행만 불러오기
+#행번호를 활용해서 특정행을 불러오기
+
+#slice(데이터명,잘라서가져올행)
+slice(delivery,c(1,3,5:10))
+
+##filter()로 조건에 맞는 데이터행만 불러오기
+filter(delivery,시군구=='성북구')
+filter(delivery,delivery$시군구=='성북구')
+#filter(데이터명,조건)
+
+#복수의 조건사용
+#filter(데이터명,조건1,조건2,조건3...)
+#조건문은 논리연산(==,!=,>,<)을 활용
+#or은 | 로 연결, AND는 , 로 연결
+filter(delivery, 시군구=='성북구',요일 %in%c('토','일'), 업종=='피자' | 통화건수>=100)
+
+
+#arrange()로 정렬하기(오름차순)
+#arrange(데이터명,정렬기준변수1,정렬기준변수2..)
+arrange(delivery, 시군구,요일,업종)
+##내림차순은 'desc'활용
+arrange(delivery,desc(시군구),요일,업종)
+
+#select()로 변수를 선택하거나 제외하기
+select(delivery,통화건수)
+
+#':'를 활용한 순서대로 여러변수 선택하기
+select(delivery, 시간대:통화건수)
+
+#'-'를 활용한 변수제외
+select(delivery,-요일,-시간대)
+
+#distinct()로 반복 내용제거하기
+distinct(delivery,업종)
+
+######################################
+data(iris)
+##1
+slice(iris,seq(1,50,2),seq(100,150,2))
+##2
+filter(iris,Species=='setosa',Sepal.Length>5)
+##3
+arrange(iris,desc(Sepal.Length),Sepal.Width)
+##4.
+select(iris,Sepal.Width,Species)
+##5
+distinct(iris,Species)
+##########################################,
+
+#mutate()로 기존변수를 활용한 임시변수 만들기
+#변수 추가
+#delivery$새요일=paste0(delivery$요일,'요일')
+mutate(delivery, 새요일=paste0(요일,'요일'))
+
+#count()로 그룹별 개수 세기
+count(delivery,시군구)
+
+#group_by()로 그룹 지정해주기
+delivery_grp=group_by(delivery,시군구)
+
+#summarise()로 요약하기
+#원본데이터는 전체요약, 그룹이 지정된 데이터는 그룹별 요약
+summarise(delivery, mean=mean(통화건수), m=min(통화건수),M=max(통화건수))
+summarise(delivery_grp,mean=mean(통화건수), m=min(통화건수),M=max(통화건수))
+
+summarise(delivery_grp,length(통화건수))
+# =delivery_grp %>% count(통화건수)
+
+top_n()으로 상위 관측치 확인하기
+
+top_n(delivery,5,통화건수)
+
+top_n(delivery_grp,5,통화건수)
+
+####################################################
+data(iris)
+
+#6
+#iris$Sepal_sum=iris$Sepal.Length+iris$Sepal.Width
+mutate(iris,Sepal_sum=Sepal.Length+Sepal.Width)
+#7
+count(iris,Species)
+#8
+summarise(iris,Sum=sum(Sepal.Length),mean=mean(Sepal.Width))
+#9
+top_n(iris,5,Petal.Width)
+
+######################################################
+
+#파이프라인(%>%)활용한 연속작업
+delivery %>%
+    filter(업종=='중국음식') %>%
+    group_by(시군구) %>%
+    summarise(mean_call = mean(통화건수)) %>%
+    arrange(desc(mean_call))
+
+#데이터 저장
+new_data = delivery %>%
+                  filter(시간대>=18) %>%
+                  group_by(시군구,) %>%
+                  summarise(mean_call = mean(통화건수),업종=업종) %>%
+                  arrange(desc(mean_call))
+new_data
+
+#결과를 csv파일로 저장
+write.csv(new_data,'result.csv',row.names=FALSE)
+
+#ungroup()활용
+
+delivery %>%
+    filter(업종=='중국음식') %>%
+    group_by(시간대,시군구) %>%
+    summarise(mean_call=mean(통화건수)) %>%
+    ungroup() %>%
+    group_by(시군구) %>%
+    top_n(3,mean_call) %>%
+    arrange(시군구,desc(mean_call))
+
+############################################
+ins=read.csv('insurance.csv')
+head(ins)
+
+#1
+ins %>%
+  filter(sex=='female') %>%
+  group_by(region) %>%
+  count()
+
+ins %>%
+  filter(sex=='female') %>%
+  count(region)
+
+#2
+ins %>%
+  filter(charges >= 10000) %>%
+  group_by(smoker) %>%
+  summarise(mean=mean(age))
+
+#3
+charges=ins %>%
+  filter(age<40) %>%
+  group_by(sex,smoker) %>%
+  summarise(mean=mean(charges),M=max(charges))
+
+#4
+write.csv(charges,'성별흡연여부에따른보험요금.csv',row.names=FALSE)
+
+load('NHIS.RData')
+
+View(NHIS)
+str(NHIS)
+head(NHIS)
+
+#
+NHIS %>%
+  group_by(SEX,AGE_GROUP) %>%
+  summarise(n=length(SEX)) %>%
+  arrange(desc(n))
+
+NHIS %>%
+  dplyr::count(SEX,AGE_GROUP) %>%
+  arrange(desc(n))
+
+#성별/연령대별 환자 분포 확인
+
+NHIS %>%
+  dplyr::select(IDV_ID,SEX,AGE_GROUP) %>%
+  unique() %>%
+  dplyr::count(SEX,AGE_GROUP)
+
+##################################################
+#1.
+NHIS %>%
+  select(IDV_ID,SEX,AGE_GROUP,DSBJT_CD) %>%
+  unique() %>%
+  count(SEX,AGE_GROUP,DSBJT_CD) %>%
+  arrange(desc(n))
+
+#2
+NHIS %>%
+  group_by(SEX,AGE_GROUP) %>%
+  summarise(m1=mean(VSCN),m2=mean(RECN),m3=mean(EDEC_TRAMT),m4=mean(EDEC_SBRDN_AMT)) %>%
+  arrange(desc(m3))
+
+#3
+NHIS %>%
+  group_by(SEX,AGE_GROUP,MAIN_SICK) %>%
+  count() %>%
+  top_n(3,wt=n) %>%
+  arrange(SEX,AGE_GROUP,desc(n))
+
+
+##모법답안
+
+NHIS %>%
+  group_by(SEX, AGE_GROUP, MAIN_SICK) %>%
+  summarise(n=n()) %>%
+  top_n(n=3 , wt=n) %>%
+  arrange(SEX, AGE_GROUP, desc(n))
+
+
+## Species 별로 Sepal.Length의 비중을 아고싶다면??
+iris %>%
+  mutate(n=rowSums([,Sepal.Length,Sepal.Width]))
+  group_by(Sepal.Length,Sepal.Width) %>%
+  
+    iris %>%
+    dplyr::group_by(Species) %>%
+    dplyr::mutate(sum = sum(Sepal.Length)) %>%
+    dplyr::mutate(prop = Sepal.Length/sum) %>%
+    dplyr::select(Species,Sepal.Length,prop)
+  
+        
+# iris 데이터에서 Species별 Sepal.Width가 3번≳로 큰 값들의 합은?
+    
+
+
