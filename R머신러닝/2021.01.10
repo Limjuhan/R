@@ -1,0 +1,167 @@
+library(tidyverse)
+
+getwd()
+list.files()
+cust <- readRDS(file='Dataset for Cust.RDS')
+str(cust)
+
+dist(cust) # B,C 거리가 제일가까움
+
+scaled <- scale(cust)
+summary(scaled)
+apply(scaled,MARGIN = 2,FUN=sd)#function
+dist(scaled) # scale(데이터표준화)한후에 A,B가 가까움
+
+#거리를 계산할때는 데이터표준화를 이용한다!!!!
+#데이터표준화(평균0,표준편차1)
+set.seed(seed = 1234)
+heights <- rnorm(n = 10000, mean = 172.4, sd = 5.7)
+scaled1 <- scale(x = heights)
+mean(x = scaled1) #[1] 1.266692e-15 <--- 0이라고 생각하면됨
+sd(x = scaled1)
+range(scaled1)
+########################
+#최소값~최대값 (0~1사이)
+Min <- min(heights)
+Max <- max(heights)
+scaled2 <- scale(x = heights, center = Min, scale = Max - Min)
+mean(x = scaled2)
+sd(x = scaled2)
+range(scaled2)
+
+url <- "https://bit.ly/white_wine_quality"
+guess_encoding(url)
+df<-read.csv(url,sep=';') #url파일에 value값 들은 ;로 구분되어있으므로 sep=';' 지정
+View(df)
+str(df)
+summary(df)
+
+
+tbl<-table(df$quality)
+print(tbl)
+tbl %>% prop.table() %>% cumsum() %>% round(digits = 4L) * 100
+
+bp <- barplot(height = tbl,
+              ylim = c(0,2400),
+              xlab = 'Quality',
+              main = 'White Wine')
+
+text(x= bp,
+     y= tbl,
+     labels = tbl,
+     pos = 3,
+     col= 'blue',
+     font = 2)
+
+df$grade <- ifelse(test=df$quality >=7, yes='best',no='good')
+df$grade <- factor(df$grade, levels=c('good','best'))
+print(df$grade)
+df$quality <- NULL
+str(df)
+
+#데이터셋분할(테스트,트레인)
+
+n <- nrow(df)
+set.seed(1234)
+n
+index <- sample(n,size=n * 0.7, replace = FALSE)
+trainSet <- df %>% slice(index)
+testSet <- df %>% slice(-index)
+
+trainSet$grade %>% table() %>% prop.table() %>% round(4) *100
+testSet$grade %>% table() %>% prop.table() %>% round(4) *100
+
+k<- trainSet %>% nrow() %>% sqrt() %>% ceiling()
+k
+
+install.packages("kknn")
+library(kknn)
+fit1 <- kknn(formula = grade ~ .,
+             train=trainSet,
+             test=testSet,
+             k=k,
+             kernel='rectangular')
+str(fit1)
+
+fit1$fitted.values
+fit1$prob[,2]
+
+####
+real<- testSet$grade
+pred1 <- fit1$fitted.values
+table(pred1,real)
+
+library(caret)
+confusionMatrix(pred1,reference = real, positive='best')
+
+library(MLmetrics)
+F1_Score(y_true=real, y_pred = pred1, positive = 'best')
+
+prob1 <- fit1$prob[,2]
+
+library(pROC)
+roc(response=real, predictor = prob1) %>%
+  plot(main='ROC curve',col='red',lty=1)
+
+auc(response = real, predictor = prob1)
+
+#한쪽으로치우친데이터는 5:5로 맞춰주자
+#부족한best값을 채워준다.임의의 점 하나를 찍고 인접 5개점과 연결후 랜덤으로 한점지정후 사이에 점을 찍는식으로 추가
+#install.packages("DMwR")
+library(DMwR)
+
+set.seed(1234)
+trainBal <- SMOTE(form=grade ~.,
+                  data=trainSet,
+                  perc.over = 200,
+                  k=5,
+                  perc.under = 150)
+
+trainBal$grade %>% table() %>% prop.table() %>% round(4) * 100
+
+fit2 <- kknn(formula = grade ~ .,
+             train = trainBal,
+             test = testSet,
+             k = k,
+             kernel = 'rectangular')
+
+pred2 <- fit2$fitted.values
+
+table(pred2,real)
+table(pred1,real)
+
+confusionMatrix(data=pred2, reference = real, positive = 'best')# Pos Pred Value : 0.62712 (정밀도)
+confusionMatrix(data=pred1, reference = real, positive = 'best')
+
+F1_Score(y_true = real, y_pred = pred1, positive = 'best')
+F1_Score(y_true = real, y_pred = pred2, positive = 'best')
+
+prob2 <- fit2$prob[,2]
+roc(response = real, predictor = prob2) %>%
+  plot(col='blue',lty =1, add=T)
+
+#auc넓이 계산
+auc(response=real, predictor = prob2)
+auc(response=real, predictor = prob1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
