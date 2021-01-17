@@ -1,0 +1,362 @@
+# 데이터 분석가 _ james         \
+#                                \
+# 스크립트 실행(Run a script)    \
+##  : Windows : 'Ctrl + Enter'   \
+##  : MAC     : 'Command + Enter'\
+#---------------------------------
+
+#1. 상관관계분석(Correlation) 0~1의 범위를가지고 양측끝에서 0으로 갈수록 상관도가 약해짐
+
+height<-c(164,175,166,185) 
+weight<-c(62,70,64,86)
+
+cor(height,weight) #연속형변수 2개
+round(cor(height,weight),3)
+
+# install.packages("moonBook")
+library(moonBook)
+data(acs)
+#install.packages("psych")
+library(psych)
+str(acs)
+acs2<-acs[,c(1,6:9)] #연속형데이터만 불러옴
+cor(acs2)
+#na가 존재할시 na 제외후 계산
+cor(acs2,use="na.or.complete")
+
+#산점도행렬
+pairs.panels(acs2)
+
+
+#install.packages("PerformanceAnalytics");  
+library(PerformanceAnalytics)
+#산점도행렬
+chart.Correlation(acs2, histogram=TRUE, pch=19) # *은 유의확률
+
+#킹콩 data의 추가 -> 데이터 하나의 큰 영향
+dat<-data.frame(
+  a=c(15,20,25,27,31,25,23,23,42,12,34,23,40),
+  b=c(50,55,52,52,56,54,62,56,70,46,43,50,54)
+)
+plot(dat$a,dat$b)
+abline(lm(dat$b~dat$a))
+cor(dat$a,dat$b)
+
+
+#outlier 추가
+dat[14,]<-c(200,230)
+plot(dat$a,dat$b)
+abline(lm(dat$b~dat$a))
+cor(dat$a,dat$b) #아웃라이어때문에 상관계수가 높게 나온것을 확인할수있음.
+
+#heatmap expression
+# install.packages("corrplot")
+library(corrplot)
+
+corrplot(cor(acs2,use="na.or.complete"))
+corrplot(cor(acs2,use="na.or.complete"),method="square")
+corrplot(cor(acs2,use="na.or.complete"),method="ellipse")
+corrplot(cor(acs2,use="na.or.complete"),method="number")
+corrplot(cor(acs2,use="na.or.complete"),method="shade")
+corrplot(cor(acs2,use="na.or.complete"),method="color")
+corrplot(cor(acs2,use="na.or.complete"),method="pie")
+
+
+#cor의 비모수적인 표현들
+#1. spearman
+#2. kendall's tau
+cor(height,weight)
+cor(height,weight,method="spearman")
+cor(height,weight,method="kendall")
+
+?cor
+
+############### 연습문제 ###############
+
+data(iris)
+#1. iris에서 연속형 데이터를 갖고 상관관계를 구하고 Sepal.Length와 가장 상관있는 변수는 무엇인가?
+#(2가지 이상의 시각화를 그려보시오)
+ss<-cor(iris[,1:4])
+corrplot(cor(ss,use="na.or.complete"))
+corrplot(cor(ss,use="na.or.complete"),method="pie")
+pairs.panels(iris[,1:4])
+#####
+data(mtcars)
+head(mtcars)
+#mpg에서 qesc까지의 변수를 갖고 상관관계를 구하시오
+pairs.panels(mtcars[,1:7])
+chart.Correlation(mtcars[,1:7], histogram=TRUE, pch=19)
+##################################
+
+#2. 2 집단에대한 평균비교 t-test
+library(ggplot2)
+t_data<-data.frame(
+  group=c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2),
+  score=c(100,100,80,50,40,90,20,50,50,70,30,40,30,70,30,40,30,60,30,60),
+  age=c(80,20,30,70,90,20,30,60,50,50,20,30,20,20,25,10,13,12,11,10))
+
+ggplot(t_data,aes(x=factor(group),y=score,fill=factor(group))) + geom_boxplot()
+
+#정규성검정(귀무가설:정규분포를 띈다,대립가설(pvalue<0.05) : 정규분포가 아니다)
+
+#정규성 검정 -  shapiro
+shapiro.test(t_data$score)
+
+
+#등분산성 검정
+
+t_data_1<-t_data[t_data$group==1,]
+t_data_2<-t_data[t_data$group==2,]
+
+
+var.test(t_data_1$score,t_data_2$score)
+
+#t_test방법 2가지 존재
+#df: 자유도(통계적 추정을 할 때 표본자료 중 모집단에 대한 정보를 주는 독립적인 자료의 수를 말한다.)
+#1번 t.test방법
+t.test(t_data_1$score,t_data_2$score,var.equal=T)
+
+#2번 t.test방법
+t.test(score~group,data=t_data,var.equal=T)
+
+
+#등분산이 아닐경우
+var.test(t_data_1$age,t_data_2$age)
+t.test(t_data_1$age,t_data_2$age,var.equal=F)
+
+
+
+#대응 T-test의 수행(같은집단에대하여 전/후비교) - paried=T를 붙여줌
+#(ex:약을 복용하기 전과 후)
+before_op = c(137,119,117,122,132,110,114,117)
+after_op = c(126,111,117,116,135,110,113,112)
+
+t.test(before_op,after_op,paired=T)
+
+
+mid = c(16, 20, 21, 22, 23, 22, 27, 25, 27, 28)
+final = c(19, 20, 24, 24, 25, 25, 26, 26, 28, 32)
+
+t.test(mid,final, paired=TRUE)
+
+
+
+################## T검정 연습해보기 ###################
+
+# 1
+a = c(175, 168, 168, 190, 156, 181, 182, 175, 174, 179)
+b = c(185, 169, 173, 173, 188, 186, 175, 174, 179, 180)
+
+### 다음 데이터를 갖고 T검정을 하시오 (정규성 생략)
+var.test(a,b) # pvalue가 0.05보다크므로 귀무가설, 등분산이다
+t.test(a,b,var.equal=T)
+#p-value = 0.356,    0.05보다크므로 귀무가설 즉 차이가없다
+
+# 2
+data(mtcars)
+# am 변수에 따라 mpg가 차이가 있는지 확인하시오
+head(mtcars)
+
+var.test(mtcars[mtcars$am==1,1],mtcars[mtcars$am==0,1]) #p-value = 0.06691 귀무가설,등분산이다
+
+t.test(mtcars[mtcars$am==1,1],mtcars[mtcars$am==0,1])#p-value = 0.001374 대립가설채택,am변수에따라 mpg차이가 있다.
+
+
+######################################################
+
+
+#3.3개이상의 평균비교 시 분산분석 - Anova(Analysis of Variance)
+library(ggplot2)
+#install.packages("laercio")
+
+anova_data<-data.frame(
+  group=c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3),
+  score=c(50.5, 52.1, 51.9, 52.4, 50.6, 51.4, 51.2, 52.2, 51.5, 50.8,47.5, 47.7, 46.6, 47.1, 47.2, 47.8, 45.2, 47.4, 45.0, 47.9,46.0, 47.1, 45.6, 47.1, 47.2, 46.4, 45.9, 47.1, 44.9, 46.2))
+
+ggplot(anova_data,aes(x=factor(group),y=score,fill=factor(group))) + geom_boxplot()
+
+tapply(anova_data$score,anova_data$group,mean) #group 별 score 평균
+
+tapply(anova_data$score,anova_data$group,max) #group별 최고score값
+
+#등분산성 test
+bartlett.test(score~as.factor(group),data=anova_data)
+
+#분산테스트
+#oneway.test(1)
+oneway.test(score~group,data=anova_data,var.equal = T)
+
+#(2)
+?aov
+a1<-aov(score~group,data=anova_data)
+summary(aov(score~group,data=anova_data))
+
+
+
+#사후분석(분석방법에서 3개이상중 하나는 차이가날텐데 어디가 차이나는지 분석하는것)
+library(laercio)
+LDuncan(a1, "group")
+
+
+#group에 해당하는 부분이 문자형 이어야함
+TukeyHSD(aov(score~as.character(group),data=anova_data))
+plot(TukeyHSD(aov(score~as.character(group),data=anova_data)))
+
+
+
+######################
+#### 등분산이 아닐경우
+
+anova_data2<-data.frame(
+  group=c(1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3),
+  score=c(70, 30, 20.3, 85.3, 50.6, 51.4, 51.2, 52.2, 51.5, 50.8,47.5, 47.7, 46.6, 47.1, 47.2, 47.8, 45.2, 47.4, 45.0, 47.9,46.0, 47.1, 45.6, 47.1, 47.2, 46.4, 45.9, 47.1, 44.9, 46.2))
+
+#등분산성 test
+bartlett.test(score~as.factor(group),data=anova_data2)
+
+#분산분석
+#oneway.test(1)
+oneway.test(score~group,data=anova_data2,var.equal = F)
+#aov(2)
+a2<-aov(score~group,data=anova_data2)
+summary(aov(score~group,data=anova_data2))
+
+#사후분석(3개중 하나는 차이가날텐데 어디가 차이나는지 분석하는것)
+library(laercio)
+LDuncan(a2, "group")
+
+#group에 해당하는 부분이 문자형 이어야함
+TukeyHSD(aov(score~as.character(group),data=anova_data2))
+plot(TukeyHSD(aov(score~as.character(group),data=anova_data2)))
+
+
+################## F검정 연습해보기 ###################
+data(iris)
+#1. iris에서 Species마다 Sepal.Width의 차이가 있는지 확인하시오
+# 사후 검정과 해석을 적으시오
+#등분산성 test
+bartlett.test(Sepal.Width~as.factor(Species),data=iris) #p-value = 0.3515,귀무가설채택 등분산이다
+#분산분석test
+oneway.test(Sepal.Width~Species,data=iris,var.equal = T) #p-value < 2.2e-16,대립가설채택, Species마다 Sepal.width가 차이가있다
+a2<-aov(Sepal.Width~Species,data=iris)
+summary(a2)
+#사후분석
+LDuncan(a2,"Species")
+
+#2 mtcars데이터에서 gear따라 mpg의 차이가 있는지 확인하시오
+# 사후 검정과 해석을 적으시오
+head(mtcars)
+distinct(mtcars,gear) #gear종류가 3개이므로 분산test실행
+#등산분석test
+bartlett.test(mpg~as.factor(gear),data=mtcars) #p-value = 0.1477 귀무가설채택,gear3개는 등분산이다
+#분산test
+oneway.test(mpg~as.factor(gear),data=mtcars) #p-value = 0.003085 대립가설채택,gear별로 mpg값이 다르다
+z1<-aov(mpg~as.factor(gear),data=mtcars)
+summary(z1)
+#사후분석 ,  4,5는 차이가없고 3이 이둘과 차이가있다.
+LDuncan(z1,"gear")
+TukeyHSD(aov(mpg~as.character(gear),data=mtcars))
+
+#######################################################
+
+#문자형 데이터분석
+data(acs)
+head(acs)
+
+# 성별과 비만은 연관이 있을까?
+
+table(acs$sex,acs$obesity)
+table(iris$Sepal.Length,iris$Species)
+
+acs %>% 
+  dplyr::count(sex,obesity) %>%
+  ggplot(aes(x=sex,y=n,fill=obesity)) + geom_bar(stat="identity",position = "dodge")
+
+
+chisq.test(acs$sex,acs$obesity,correct = F)
+chisq.test(table(acs$sex,acs$obesity)) #DEFAULT(correct TRUE값)
+
+# correct?
+# 비 연속적 이항분포에서 확률이나 비율을 알기 위하여 연속적 분포인
+# 카이제곱 분포를 이용할 떄는 연속성을 가지도록 비연속성을 교정해야할 필요하 있을 떄 사용하는 방법
+# 보통 2X2 행렬에서 자주 사용함
+
+
+install.packages("gmodels")
+library(gmodels)
+
+CrossTable(acs$sex,acs$obesity,chisq=T,prop.t=F)
+CrossTable(table(acs$sex,acs$obesity))
+0.089 + 0.175 + 0.045 + 0.088
+
+# 일반횟수
+# 카이 제곱 ( 기대치 비율 )
+# 행을 기준으로 비율 값 ( 가로로 읽는다. )
+# 컬럼을 기준으로 비율 값 ( 세로로 읽는다. )
+# 전체를 기준으로 비율 값
+
+# 성별과 비만은 연관이 있을까?
+
+table(acs$sex,acs$smoking)
+
+acs %>% 
+  dplyr::count(sex,smoking) %>%
+  ggplot(aes(x=sex,y=n,fill=smoking)) + geom_bar(stat="identity",position = "dodge")
+
+chisq.test(acs$sex,acs$smoking,correct = F)
+chisq.test(table(acs$sex,acs$smoking),correct = F)
+
+
+#자료 생성
+dat <- matrix(c(20,24,15,5),ncol=2)
+row.names(dat) <- c("흡연","비흡연")
+colnames(dat)<- c("정상","비정상")
+dat
+
+
+
+xtab <- matrix(c(384, 536, 335,951, 869, 438),nrow=2)
+dimnames(xtab) <- list(
+  stone = c("yes", "no"),
+  age = c("30-39", "40-49", "50-59")
+)
+
+colSums(xtab)
+prop.trend.test(xtab[1,],colSums(xtab))
+mosaicplot(t(xtab),col=c("deepskyblue", "brown2"))
+# 나이 비율이 동일하지 않다
+
+
+################## 카이제곱 연습해보기 ###################
+# 1
+install.packages("MASS")
+library(MASS)
+data("survey")
+# survey 데티어에서 Sex변수와 Smoke가 연관이 있는지 검정하여라
+# 시각화 포함
+head(survey)
+View(survey)
+distinct(survey,Smoke)
+
+table(survey$Sex,survey$Smoke)
+
+library(ggplot2)
+survey %>% 
+  dplyr::count(Sex,Smoke) %>%
+  dplyr::recode(survey$Smoke,'Heavy' = 'Never', 'Never' = 'Occas', 'Occas' = 'Regul', 'Regul' = 'Heavy') %>%
+  ggplot(aes(x=Sex,y=n,fill=Smoke)) + geom_bar(stat="identity",position = "dodge")
+
+chisq.test(survey$Sex,survey$Smoke) # p-value = 0.3139 , 귀무가설, Sex와Smoke는 연관이 없다.
+
+chisq.test(table(survey$Sex,survey$Smoke),correct = F)
+
+# 2
+delivery = read.csv('SKT.csv', fileEncoding='UTF-8')
+head(delivery)
+# 요일별 업종의 차이가 있는지 검정하여라
+
+table(delivery$업종,delivery$요일)
+
+chisq.test(delivery$요일,delivery$업종)
+mosaicplot(t(table(delivery$요일,delivery$업종)),col=c("deepskyblue", "brown2"))
+#######################################################
