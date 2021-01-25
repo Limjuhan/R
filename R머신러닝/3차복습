@@ -1,0 +1,121 @@
+rm(list=ls())
+library(tidyverse)
+
+url <- 'https://bit.ly/university_admit'
+
+guess_encoding(file=url)
+
+#guess_encoding(file='https://www.naver.com')
+
+#guess_encoding(file='https://finance.naver.com')
+
+df <- read.csv(file=url)
+#str()함수를 실행하는 이유 : 
+#컬럼별 벡터 자료형을 확인하기 위함!
+str(object=df) #ex:admit,rank같은자료형은 범주형으로 변환해야함.
+head(df,10)
+#summary() 실행이유 : 
+#컬럼별 기술통계량(평균,사분위수등등..)을 빠르게 확인하기 위해
+summary(df)
+
+vars <- c('admit','rank')
+df[,vars] <- map_df(.x=df[,vars], .f=as.factor)
+summary(df) #admit,rank가 범주형으로 바뀐것확인가능
+
+prop.table(table(df$admit)) * 100
+
+# shift + ctrl + m  = %>%
+df$admit %>% 
+  table() %>% 
+  prop.table() * 100
+
+#EDA
+#gre
+boxplot(formula=gre ~ admit, data=df, col='white',outcol='red')
+
+avg <- df %>% 
+        group_by(admit) %>%
+        summarise(m=mean(gre))
+
+points(x=avg$admit,
+       y=avg$m,
+       pch=19,
+       col='red',
+       cex=1.2)
+
+by(data=df$gre, INDICES = df$admit, FUN = shapiro.test)#shapiro.test로 정규성검정
+wilcox.test(formula=gre~admit,data=df)
+
+#gpa
+boxplot(formula=gpa ~ admit, data=df, col='white',outcol='red')
+
+avg <- df %>% 
+  group_by(admit) %>%
+  summarise(m=mean(x=gpa))
+
+points(formula = m ~ admit,
+       data=avg,
+       pch=19,
+       col='red',
+       cex=1.2)
+
+by(data=df$gpa, INDICES = df$admit, FUN = shapiro.test)
+wilcox.test(formula=gpa~admit,data=df)
+
+############################
+install.packages('gmodels')
+library(gmodels)
+
+
+CrossTable(x=df$rank,y=df$admit)
+chisq.test(x=df$rank,y=df$admit)
+
+n <- nrow(df)
+set.seed(1234)
+index <- sample(n,size=n * 0.7, replace=F)
+trainSet <- df %>%
+              slice(index)
+testSet <- df %>%
+            slice(-index)
+
+trainSet$admit %>% table() %>% prop.table() * 100
+testSet$admit %>% table() %>% prop.table() * 100
+
+#lm은 목표변수가 정규분포할때, glm은 정규분포하지않을때
+fit1 <- glm(formula= admit ~ ., 
+            data =trainSet, 
+            family = binomial(link='logit'))
+summary(fit1)
+
+fit1$coefficients %>% exp() %>% round(digits=4L)
+
+real<-testSet$admit
+print(real)
+
+prob1<-predict(fit1,newdata=testSet, type='response')
+print(prob1)
+
+pred1<-ifelse(test=prob1 >= 0.5, yes=1, no=0) %>% as.factor()
+print(pred1)
+
+#install.packages('caret')
+#install.packages('e1071')
+library(caret)
+confusionMatrix(data=pred1,reference = real,positive = '1')
+
+
+library(MLmetrics)
+F1_Score(y_true = real, y_pred = pred1, positive = '1')
+
+library(pROC)
+roc(response = real, predictor = prob1) %>% 
+  plot(main = 'ROC Curve', col = 'red', lty = 1)
+
+roc(response = real, predictor = as.numeric(x = pred1)) %>% 
+  plot(col = 'blue', lty = 2, lwd = 2, add = TRUE)
+
+
+
+
+
+
